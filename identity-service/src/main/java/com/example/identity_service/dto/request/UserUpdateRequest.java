@@ -1,9 +1,16 @@
 package com.example.identity_service.dto.request;
 
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserUpdateRequest {
     @Size(min = 3, message = "USERNAME_INVALID")
     private String username;
@@ -12,43 +19,4 @@ public class UserUpdateRequest {
     private String firstName;
     private String lastName;
     private LocalDate doB;
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public LocalDate getDoB() {
-        return doB;
-    }
-
-    public void setDoB(LocalDate doB) {
-        this.doB = doB;
-    }
 }
