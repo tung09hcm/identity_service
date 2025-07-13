@@ -8,6 +8,7 @@ import com.example.identity_service.entity.User;
 import com.example.identity_service.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,8 +28,10 @@ public class UserController {
     }
 
     @GetMapping
-    ApiResponse<List<User>> getAllUser(){
-        ApiResponse<List<User>> apiResponse = new ApiResponse<>();
+    ApiResponse<List<UserResponse>> getAllUser(){
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        ApiResponse<List<UserResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setResult((userService.getAllUser()));
         return apiResponse;
     }
@@ -39,6 +42,14 @@ public class UserController {
         apiResponse.setResult(userService.getUser(userId));
         return apiResponse;
     }
+
+    @GetMapping("/myInfo")
+    ApiResponse<UserResponse> getMyInfo(){
+        ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setResult(userService.getMyInfo());
+        return apiResponse;
+    }
+
 
     @PutMapping("/{userId}")
     ApiResponse<User> updateUser(@RequestBody UserUpdateRequest userUpdateRequest, @PathVariable String userId){
