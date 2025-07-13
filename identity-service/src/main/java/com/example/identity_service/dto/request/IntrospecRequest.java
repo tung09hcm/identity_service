@@ -1,4 +1,4 @@
-package com.example.identity_service.dto.response;
+package com.example.identity_service.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
+public class IntrospecRequest {
     boolean isAuthenticated;
     String token;
 }
