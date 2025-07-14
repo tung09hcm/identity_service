@@ -71,27 +71,53 @@ public class AuthenticationService {
                 .build();
     }
 
-    private String generateToken(User user){
+    /**
+     * Tạo JWT (JSON Web Token) cho người dùng đã xác thực
+     * Token được ký bằng thuật toán HMAC SHA-512 (HS512)
+     *
+     * ➤ Thư viện dùng: com.nimbusds:nimbus-jose-jwt
+     * ➤ Token trả ra là chuỗi JWT đã được ký (compact serialized string)
+     *
+     * @param user - thực thể người dùng đã đăng nhập
+     * @return chuỗi JWT hợp lệ, có chữ ký, mang thông tin xác thực của user
+     */
+    private String generateToken(User user) {
+
+        // Tạo phần header của JWT, chỉ định thuật toán ký là HS512
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
+
+        // Xây dựng phần payload (claims) của JWT
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())
-                .issuer("dunno.com")
-                .issueTime(new Date())
-                .expirationTime(new Date(
+                .subject(user.getUsername())          // định danh người dùng (thường là username)
+                .issuer("dunno.com")                  // tên hệ thống phát hành token
+                .issueTime(new Date())                // thời gian token được tạo
+                .expirationTime(new Date(             // thời gian token hết hạn (sau 1 giờ)
                         Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
                 ))
-                .claim("scope", buildScope(user))
+                .claim("scope", buildScope(user))     // custom claim chứa danh sách quyền (roles)
                 .build();
+
+        // Chuyển claims thành payload JSON
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+
+        // Kết hợp header và payload để tạo đối tượng JWSObject (JWT chưa ký)
         JWSObject jwsObject = new JWSObject(jwsHeader, payload);
+
         try {
+            // Ký token bằng khóa bí mật (HMAC-SHA512)
+            // MACSigner sẽ dùng byte[] của key để ký (HS512 yêu cầu key >= 512 bits để an toàn)
             jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+
+            // Trả ra chuỗi JWT đã được ký, ở dạng compact serialization (chuỗi . ngăn cách 3 phần)
             return jwsObject.serialize();
+
         } catch (JOSEException e) {
+            // Ghi log nếu có lỗi khi ký JWT và ném runtime exception
             log.error("Cannot create token");
             throw new RuntimeException(e);
         }
     }
+
     private String buildScope(User user){
         StringJoiner stringJoiner = new StringJoiner(" ");
         if(!CollectionUtils.isEmpty(user.getRoles())){

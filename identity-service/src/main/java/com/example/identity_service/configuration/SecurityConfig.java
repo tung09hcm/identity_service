@@ -20,56 +20,97 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.spec.SecretKeySpec;
 
-@Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
+@Configuration // Đánh dấu đây là một class cấu hình cho Spring (được scan và thực thi khi ứng dụng khởi động)
+@EnableWebSecurity // Bật bảo mật web Spring Security (tương đương với cấu hình WebSecurityConfigurerAdapter trước đây)
+@EnableMethodSecurity // Cho phép dùng các annotation phân quyền như @PreAuthorize, @Secured trên controller hoặc service
 public class SecurityConfig {
 
-    private final String[] PUBLIC_ENDPOINTS = {"/users",
-        "/auth/token", "auth/introspect"
+    // Danh sách các endpoint công khai (không yêu cầu xác thực)
+    private final String[] PUBLIC_ENDPOINTS = {
+            "/users",
+            "/auth/token",
+            "auth/introspect"
     };
+
+    // Đọc giá trị khóa ký JWT từ file application.properties (hoặc biến môi trường)
     @Value("${jwt.signerKey}")
     private String signerKey;
 
+    /**
+     * Cấu hình chính cho bảo mật HTTP
+     * Trả về một SecurityFilterChain (thay thế cách cũ là override configure())
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+        // Cấu hình phân quyền cho request
         httpSecurity.authorizeHttpRequests(request ->
-                request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().authenticated());
-        httpSecurity.oauth2ResourceServer(oauth2 ->
-            oauth2.jwt(jwtConfigurer ->
-                    jwtConfigurer.decoder(jwtDecoder())
-                            .jwtAuthenticationConverter(jwtAuthenticationConverter())
-
-            )
-                    .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+                request
+                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll() // Cho phép gọi POST vào các endpoint công khai
+                        .anyRequest().authenticated() // Mọi request khác đều phải xác thực
         );
+
+        // Cấu hình xác thực bằng JWT (OAuth2 Resource Server)
+        httpSecurity.oauth2ResourceServer(oauth2 ->
+                oauth2.jwt(jwtConfigurer ->
+                                jwtConfigurer
+                                        .decoder(jwtDecoder()) // Cung cấp decoder để giải mã JWT
+                                        .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Mapping từ JWT → GrantedAuthorities
+                        )
+                        .authenticationEntryPoint(new JwtAuthenticationEntryPoint()) // Handler khi token không hợp lệ
+        );
+
+        // Vô hiệu hóa CSRF (chống giả mạo request) vì API REST thường không cần
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
         return httpSecurity.build();
     }
 
+    /**
+     * Trả về một JwtAuthenticationConverter
+     * Mục tiêu là chuyển đổi nội dung JWT thành Authentication object có quyền
+     * Spring Security sẽ dùng object này để phân quyền các endpoint
+     *
+     * Cụ thể: nó lấy claim "authorities" trong JWT (hoặc "scope") và gán prefix ROLE_
+     */
     @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter(){
+    JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+
+        // Prefix ROLE_ để đúng format của Spring Security (ví dụ: ROLE_ADMIN)
         jwtGrantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
+
+        // Gắn converter vào JwtAuthenticationConverter
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
+
         return jwtAuthenticationConverter;
     }
 
+    /**
+     * Trả về JwtDecoder dùng để xác thực và giải mã JWT
+     * Ở đây sử dụng NimbusJwtDecoder, một implementation phổ biến trong Spring Security
+     *
+     * Với thuật toán: HMAC SHA-512 (HS512)
+     * Key được truyền từ biến signerKey
+     */
     @Bean
-    JwtDecoder jwtDecoder(){
+    JwtDecoder jwtDecoder() {
         SecretKeySpec secretKeySpec = new SecretKeySpec(signerKey.getBytes(), "HS512");
-        return NimbusJwtDecoder
-                .withSecretKey(secretKeySpec)
-                .macAlgorithm(MacAlgorithm.HS512)
-                .build()
-                ;
-    };
 
+        return NimbusJwtDecoder
+                .withSecretKey(secretKeySpec) // cấu hình key giải mã
+                .macAlgorithm(MacAlgorithm.HS512) // thuật toán HMAC SHA-512
+                .build();
+    }
+
+    /**
+     * Trả về PasswordEncoder dùng để mã hóa mật khẩu
+     * Ở đây sử dụng BCrypt với strength 10 (số vòng lặp hashing)
+     *
+     * BCrypt tự động sinh salt nội bộ cho từng lần encode → an toàn chống rainbow table
+     */
     @Bean
-    PasswordEncoder passwordEncoder(){
+    PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
     }
 }

@@ -57,16 +57,45 @@ public class UserService {
     }
 
 
+    /**
+     * Chỉ cho phép những user có role là ADMIN được gọi method này.
+     *
+     * - hasRole('ADMIN'): kiểm tra role của user hiện tại có chứa "ROLE_ADMIN"
+     *     + ROLE_ là prefix mặc định do Spring Security thêm vào (xem jwtAuthenticationConverter)
+     *
+     * - Annotation này được kiểm tra **trước khi method được gọi**
+     *
+     * - Cần bật @EnableMethodSecurity ở cấu hình để sử dụng được
+     */
     @PreAuthorize("hasRole('ADMIN')")
-    public List<UserResponse> getAllUser(){
+    public List<UserResponse> getAllUser() {
         return userRepository.findAll().stream()
-                .map(userMapper::toUserResponse).toList();
+                .map(userMapper::toUserResponse)
+                .toList();
     }
+
+    /**
+     * Chỉ cho phép trả về user nếu username của user đó == người hiện tại đang đăng nhập.
+     *
+     * - @PostAuthorize: kiểm tra **sau khi method thực thi xong**, trước khi trả kết quả cho client.
+     *
+     * - returnObject: là **giá trị trả về của method này**, ở đây là `UserResponse`.
+     *     + Có thể truy cập field của object này như bình thường: `returnObject.username`
+     *
+     * - authentication.name: là **tên người dùng hiện tại đăng nhập** (thường là username trong token JWT)
+     *     + `authentication` là object mặc định được Spring cung cấp trong security context
+     *     + bạn không cần khai báo, Spring luôn inject sẵn
+     *
+     * ➤ Ý nghĩa: chỉ cho trả về user nếu đó là chính mình (không được xem người khác)
+     */
     @PostAuthorize("returnObject.username == authentication.name")
-    public UserResponse getUser(String userId){
-        return userMapper.toUserResponse(userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
+    public UserResponse getUser(String userId) {
+        return userMapper.toUserResponse(
+                userRepository.findById(userId)
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED))
+        );
     }
+
 
     public User updateUser(String userId, UserUpdateRequest request){
         User user = userRepository.findById(userId)
