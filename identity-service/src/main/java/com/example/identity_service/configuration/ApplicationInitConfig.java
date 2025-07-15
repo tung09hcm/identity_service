@@ -49,7 +49,7 @@ public class ApplicationInitConfig {
                 User user = User.builder()
                         .username("admin")
                         .password(passwordEncoder.encode("admin")) // encode mật khẩu bằng BCrypt (hoặc cấu hình trong SecurityConfig)
-                        .roles(roles)
+//                        .roles(roles)
                         .build();
 
                 // Lưu user vào database
