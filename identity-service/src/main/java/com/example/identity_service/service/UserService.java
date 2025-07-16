@@ -8,6 +8,7 @@ import com.example.identity_service.enums.Role;
 import com.example.identity_service.exception.AppException;
 import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.mapper.UserMapper;
+import com.example.identity_service.repository.RoleRepository;
 import com.example.identity_service.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    RoleRepository roleRepository;
 
     public User createUser(UserCreationRequest request){
         if(userRepository.existsByUsername(request.getUsername())){
@@ -68,6 +70,7 @@ public class UserService {
      * - Cần bật @EnableMethodSecurity ở cấu hình để sử dụng được
      */
     @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasAuthority(``)")
     public List<UserResponse> getAllUser() {
         return userRepository.findAll().stream()
                 .map(userMapper::toUserResponse)
@@ -106,6 +109,10 @@ public class UserService {
         System.out.println("password: " + request.getPassword());
 
         userMapper.updateUser(user,request);
+
+        var roles = roleRepository.findAllById(request.getRoles());
+        user.setRoles(new HashSet<>(roles));
+
         return userRepository.save(user);
 
     }

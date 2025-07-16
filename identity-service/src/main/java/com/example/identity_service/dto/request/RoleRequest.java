@@ -1,14 +1,17 @@
-package com.example.identity_service.dto.response;
+package com.example.identity_service.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Data
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PermissionResponse {
+public class RoleRequest {
     String name;
     String description;
+    Set<String> permissions;
 }
