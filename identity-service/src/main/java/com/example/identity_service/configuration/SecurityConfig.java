@@ -1,6 +1,7 @@
 package com.example.identity_service.configuration;
 
 import com.example.identity_service.enums.Role;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,8 +30,12 @@ public class SecurityConfig {
     private final String[] PUBLIC_ENDPOINTS = {
             "/users",
             "/auth/token",
-            "auth/introspect"
+            "/auth/introspect",
+            "/auth/logout"
     };
+
+    @Autowired
+    private CustomJwtDecoder customJwtDecoder;
 
     // Đọc giá trị khóa ký JWT từ file application.properties (hoặc biến môi trường)
     @Value("${jwt.signerKey}")
@@ -53,7 +58,7 @@ public class SecurityConfig {
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer ->
                                 jwtConfigurer
-                                        .decoder(jwtDecoder()) // Cung cấp decoder để giải mã JWT
+                                        .decoder(customJwtDecoder) // Cung cấp decoder để giải mã JWT
                                         .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Mapping từ JWT → GrantedAuthorities
                         )
                         .authenticationEntryPoint(new JwtAuthenticationEntryPoint()) // Handler khi token không hợp lệ
@@ -84,23 +89,6 @@ public class SecurityConfig {
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
 
         return jwtAuthenticationConverter;
-    }
-
-    /**
-     * Trả về JwtDecoder dùng để xác thực và giải mã JWT
-     * Ở đây sử dụng NimbusJwtDecoder, một implementation phổ biến trong Spring Security
-     *
-     * Với thuật toán: HMAC SHA-512 (HS512)
-     * Key được truyền từ biến signerKey
-     */
-    @Bean
-    JwtDecoder jwtDecoder() {
-        SecretKeySpec secretKeySpec = new SecretKeySpec(signerKey.getBytes(), "HS512");
-
-        return NimbusJwtDecoder
-                .withSecretKey(secretKeySpec) // cấu hình key giải mã
-                .macAlgorithm(MacAlgorithm.HS512) // thuật toán HMAC SHA-512
-                .build();
     }
 
     /**
