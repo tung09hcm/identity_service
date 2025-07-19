@@ -1,9 +1,6 @@
 package com.example.identity_service.controller;
 
-import com.example.identity_service.dto.request.ApiResponse;
-import com.example.identity_service.dto.request.AuthenticationRequest;
-import com.example.identity_service.dto.request.IntrospecRequest;
-import com.example.identity_service.dto.request.LogoutRequest;
+import com.example.identity_service.dto.request.*;
 import com.example.identity_service.dto.response.AuthenticationResponse;
 import com.example.identity_service.dto.response.IntrospecResponse;
 import com.example.identity_service.service.AuthenticationService;
@@ -56,12 +53,6 @@ public class AuthenticationController {
     @PostMapping("/token")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest authenticationRequest) {
         AuthenticationResponse result = authenticationService.authenticate(authenticationRequest);
-
-        /**
-         * Sử dụng builder pattern để tạo ra ApiResponse
-         * ➤ Generic <AuthenticationResponse> được chỉ rõ trong builder
-         * ➤ Builder giúp tạo object rõ ràng, mạch lạc hơn constructor thông thường
-         */
         return ApiResponse.<AuthenticationResponse>builder()
                 .result(result)                          // nội dung trả về chính
                 .message("wtf is going on here")         // thông điệp kèm theo (tùy chỉnh)
@@ -93,5 +84,14 @@ public class AuthenticationController {
 
         return ApiResponse.<Void>builder()
                 .build();
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest refreshRequest)
+            throws ParseException, JOSEException {
+        AuthenticationResponse result = authenticationService.refreshToken(refreshRequest);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(result)                          // nội dung trả về chính
+                .build();                                // kết thúc builder và trả object
     }
 }
