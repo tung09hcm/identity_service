@@ -124,10 +124,10 @@ public class AuthenticationService {
 
         // Xây dựng phần payload (claims) của JWT
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())          // định danh người dùng (thường là username)
-                .issuer("dunno.com")                  // tên hệ thống phát hành token
-                .issueTime(new Date())                // thời gian token được tạo
-                .expirationTime(new Date(             // thời gian token hết hạn (sau 1 giờ)
+                .subject(user.getUsername())
+                .issuer("dunno.com")
+                .issueTime(new Date())
+                .expirationTime(new Date(
                         Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()
                 ))
                 .jwtID(UUID.randomUUID().toString())
